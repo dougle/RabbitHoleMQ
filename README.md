@@ -7,6 +7,15 @@ Run `docker-compose up`
 
 First pip will install a rabbitmq module, rabbitmq will flood the logs with messages and then eventually you should see some messages reaching the final logging service.
 
+```plain
+last_1            | INFO:root:b'["seq-97", "service_a", "service_b", "service_c"]'
+last_1            | INFO:root:b'["seq-98", "service_a", "service_b", "service_c"]'
+last_1            | INFO:root:b'["seq-91", "service_a", "service_b", "service_c"]'
+last_1            | INFO:root:b'["seq-86", "service_a", "service_b", "service_c"]'
+last_1            | INFO:root:b'["seq-88", "service_a", "service_b", "service_c"]'
+```
+Notice that the services worked on these messages in order (a,b,c), but the sequence of messages completed as soon as they could (seq-98 completed before seq-88).
+
 RabbitMQ has a default exchange (blank queue name) which will bind to all queues, the key is used to select which queue the message appears in. This is useful to serve as a single message input while RabbitMQ does the routing for us.
 
 The flow is as follows:
