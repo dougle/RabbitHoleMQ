@@ -1,0 +1,129 @@
+version: "2.2"
+services:
+  message-broker:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: "roger"
+      RABBITMQ_DEFAULT_PASS: "Jessica"
+    hostname: "message-broker"
+    ports:
+    - "8080:15672"
+    - "5672:5672"
+
+  first:
+    image: python:3.8-alpine
+    depends_on:
+      - message-broker
+      - requirements
+      - service_a
+      - service_b
+      - service_c
+    environment:
+      PYTHONUNBUFFERED: "1"
+      RABBITMQ_HOST: "message-broker"
+      RABBITMQ_USER: "roger"
+      RABBITMQ_PASS: "Jessica"
+      NUMBER_OF_MESSAGES: 100
+#      LOG_LEVEL: "DEBUG"
+    volumes:
+      - pip:/usr/local/lib/python3.8/site-packages
+      - ./publish.py:/publish.py
+      - ./broker:/broker
+    command: python /publish.py
+
+  service_a:
+    image: python:3.8-alpine
+    depends_on:
+      - message-broker
+      - requirements
+      - last
+    environment:
+      PYTHONUNBUFFERED: "1"
+      RABBITMQ_HOST: "message-broker"
+      RABBITMQ_USER: "roger"
+      RABBITMQ_PASS: "Jessica"
+      RABBITMQ_QUEUE: "service_a"
+      RABBITMQ_NEXT_QUEUE: "service_b"
+      RANDOM_WAIT_MIN: 5
+      RANDOM_WAIT_MAX: 10
+#      LOG_LEVEL: "DEBUG"
+    volumes:
+      - pip:/usr/local/lib/python3.8/site-packages
+      - ./consumer.py:/consumer.py
+      - ./broker:/broker
+    command: python /consumer.py
+    scale: 10
+
+  service_b:
+    image: python:3.8-alpine
+    depends_on:
+      - message-broker
+      - requirements
+      - last
+    environment:
+      PYTHONUNBUFFERED: "1"
+      RABBITMQ_HOST: "message-broker"
+      RABBITMQ_USER: "roger"
+      RABBITMQ_PASS: "Jessica"
+      RABBITMQ_QUEUE: "service_b"
+      RABBITMQ_NEXT_QUEUE: "service_c"
+      RANDOM_WAIT_MIN: 5
+      RANDOM_WAIT_MAX: 10
+#      LOG_LEVEL: "DEBUG"
+    volumes:
+      - pip:/usr/local/lib/python3.8/site-packages
+      - ./consumer.py:/consumer.py
+      - ./broker:/broker
+    command: python /consumer.py
+    scale: 10
+
+  service_c:
+    image: python:3.8-alpine
+    depends_on:
+      - message-broker
+      - requirements
+      - last
+    environment:
+      PYTHONUNBUFFERED: "1"
+      RABBITMQ_HOST: "message-broker"
+      RABBITMQ_USER: "roger"
+      RABBITMQ_PASS: "Jessica"
+      RABBITMQ_QUEUE: "service_c"
+      RABBITMQ_NEXT_QUEUE: "service_log"
+      RANDOM_WAIT_MIN: 5
+      RANDOM_WAIT_MAX: 10
+#      LOG_LEVEL: "DEBUG"
+    volumes:
+      - pip:/usr/local/lib/python3.8/site-packages
+      - ./consumer.py:/consumer.py
+      - ./broker:/broker
+    command: python /consumer.py
+    scale: 10
+
+  last:
+    image: python:3.8-alpine
+    depends_on:
+      - message-broker
+      - requirements
+    environment:
+      PYTHONUNBUFFERED: "1"
+      RABBITMQ_HOST: "message-broker"
+      RABBITMQ_USER: "roger"
+      RABBITMQ_PASS: "Jessica"
+      RABBITMQ_QUEUE: "service_log"
+#      LOG_LEVEL: "DEBUG"
+    volumes:
+      - pip:/usr/local/lib/python3.8/site-packages
+      - ./log.py:/log.py
+      - ./broker:/broker
+    command: python /log.py
+
+  requirements:
+    image: python:3.8-alpine
+    volumes:
+      - pip:/usr/local/lib/python3.8/site-packages
+      - ./requirements.txt:/requirements.txt
+    command: pip install -r /requirements.txt
+
+volumes:
+  pip:
