@@ -1,7 +1,7 @@
 # RabbitHoleMQ
 A quick play around using RabbitMQ as a message broker, router, and queue between simple services, in much the same way [CAN Bus](https://en.wikipedia.org/wiki/CAN_bus) does.
 
-This could progress and be implemented to replace HTTP based APIs between microservices to add a message buffer and message preservation during times of increased load. It could also increase asynchronicity between microservices because HTTP connections wouldn't be idle waiting for responses.
+This could progress and be implemented to replace HTTP based APIs between microservices to add a message buffer and message preservation during times of increased load. It could also increase asynchronicity between microservices because HTTP connections wouldn't be idle waiting for a response.
 
 The queue messages originate in the container `first`, these messages are a json array with the only element set to the message number `["seq-1"]`
 
