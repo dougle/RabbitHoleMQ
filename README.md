@@ -1,6 +1,9 @@
 # RabbitHoleMQ
 A quick play around using RabbitMQ as a message broker, router, and queue between simple services
 
+The queue messages originate in the container `first`, these messages are a json array with the only element set to the message number `["seq-1"]`
+
+Each service has ten workers picking messages off of the relevant queue, services simply add their queue name to the json array in the message body.
 
 ### Usage
 Run `docker-compose up`
