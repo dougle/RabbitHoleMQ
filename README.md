@@ -1,2 +1,16 @@
 # RabbitHoleMQ
 A quick play around using RabbitMQ as a message broker, router, and queue between simple services
+
+
+### Usage
+Run `docker-compose up`
+
+First pip will install a rabbitmq module, rabbitmq will flood the logs with messages and then eventually you should see some messages reaching the final logging service.
+
+RabbitMQ has a default exchange (blank queue name) which will bind to all queues, the key is used to select which queue the message appears in. This is useful to serve as a single message input while RabbitMQ does the routing for us.
+
+The flow is as follows:
+* `publish.py` in container `first` will generate a load of messages and send them to RabbitMQ's default exchange.
+* `consumer.py` in the scaled service containers picks up messages (depending on `routing_key`) and does some trivial task with them
+* Each service republishes the new message to the next service.
+* `log.py` in the container `last` picks up the completed message and logs it out.
