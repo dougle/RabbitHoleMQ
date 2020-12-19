@@ -1,31 +1,35 @@
 #!/usr/bin/env python
 
-import os, logging
+import os, logging, time
 
-from broker.connection import connect
+from broker.broker import Broker
 
 logging.basicConfig(level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), None))
 
 def main():
+    broker = Broker(
+        os.getenv("RABBITMQ_HOST", "localhost"),
+        os.getenv("RABBITMQ_PORT", 5672),
+        os.getenv("RABBITMQ_USER", "guest"),
+        os.getenv("RABBITMQ_PASS", "guest")
+    )
+
     queue_name = os.getenv("RABBITMQ_QUEUE", "")
 
-    connection = connect()
+    def callback(ch, method, properties, body, data):
+        logging.debug(f"Received message on logger: {body}\n\n{data}")
 
-    inbox = connection.channel()
-    inbox.queue_declare(queue=queue_name)
+        data['completed_at'] = time.time()
 
-    def callback(ch, method, properties, body):
-        logging.debug(f"Received message on logger: {body}")
-
+        # log the result of each message chain
         logging.info(body)
+        logging.info(data)
 
-        logging.debug(f"Acking message on logger")
-        ch.basic_ack(method.delivery_tag)
-
-    inbox.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=False)
+        # ack the message
+        return True
 
     logging.debug("Waiting for messages")
-    inbox.start_consuming()
+    broker.consume(queue_name, callback)
 
 if __name__ == "__main__":
     main()

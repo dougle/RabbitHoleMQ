@@ -1,45 +1,41 @@
 #!/usr/bin/env python
 
-import os, json, logging, time, random
-
-from broker.connection import connect
+import os, logging, time, random
+from broker.broker import Broker
 
 logging.basicConfig(level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), None))
 
 def main():
+    broker = Broker(
+        os.getenv("RABBITMQ_HOST", "localhost"),
+        os.getenv("RABBITMQ_PORT", 5672),
+        os.getenv("RABBITMQ_USER", "guest"),
+        os.getenv("RABBITMQ_PASS", "guest")
+    )
+
     queue_name = os.getenv("RABBITMQ_QUEUE", "")
+    next_queue_name = os.getenv("RABBITMQ_NEXT_QUEUE", "")
 
-    connection = connect()
+    def callback(ch, method, properties, body, data={}):
+        logging.debug(f"Received message on {queue_name}: {body} \n\n{data}")
 
-    inbox = connection.channel()
-    inbox.queue_declare(queue=queue_name)
-
-    general = connection.channel()
-    general.queue_declare(queue='')
-
-
-    def callback(ch, method, properties, body):
-        logging.debug(f"Received message on {queue_name}: {body}")
-
-        body_arr = json.loads(body)
-
-        body_arr.append(queue_name)
-        new_body = json.dumps(body_arr)
-        new_key = os.getenv("RABBITMQ_NEXT_QUEUE", "")
+        # add some tribial data to the message body and the data store
+        body["history"].append(queue_name)
+        data['updated_at'] = time.time()
+        data[queue_name] = time.time()
 
         # take some time to do a task
         time.sleep(random.randint(int(os.getenv("RANDOM_WAIT_MIN", 5)), int(os.getenv("RANDOM_WAIT_MAX", 10))))
 
-        logging.debug(f"Publishing message on {new_key}: {new_body}")
-        general.basic_publish(exchange='', routing_key=new_key, body=new_body)
+        # push the message on to the next service
+        logging.debug(f"Publishing message on {next_queue_name}: {body}")
+        broker.publish(next_queue_name, body, data)
 
-        logging.debug(f"Acking message on {queue_name}")
-        ch.basic_ack(method.delivery_tag)
-
-    inbox.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=False)
+        # True to ack the message
+        return True
 
     logging.debug(f"Waiting for messages {queue_name}")
-    inbox.start_consuming()
+    broker.consume(queue_name, callback)
 
 if __name__ == "__main__":
     main()

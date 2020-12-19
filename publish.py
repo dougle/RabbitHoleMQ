@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 
-import os, json, logging, time, random
-
-from broker.connection import connect
+import os, logging, time
+from broker.broker import Broker
 
 logging.basicConfig(level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), None))
 
-connection = connect()
+broker = Broker(
+    os.getenv("RABBITMQ_HOST", "localhost"),
+    os.getenv("RABBITMQ_PORT", 5672),
+    os.getenv("RABBITMQ_USER", "guest"),
+    os.getenv("RABBITMQ_PASS", "guest")
+)
 
-channel = connection.channel()
-
+# generate a few messages
 for i in range(int(os.getenv("NUMBER_OF_MESSAGES", 10))):
     logging.debug(f"Initial message {i} published")
-    channel.basic_publish(exchange='', routing_key="service_a", body=json.dumps(["seq-"+str(i)]))
+    broker.publish("service_a", {"history": ["seq-"+str(i)]}, {"created_at": time.time()})
 
 logging.info("All initial messages published")
-connection.close()

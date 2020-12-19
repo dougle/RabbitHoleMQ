@@ -10,16 +10,21 @@ services:
     - "8080:15672"
     - "5672:5672"
 
+  data-store:
+    image: redis:alpine
+
   first:
     image: python:3.8-alpine
     depends_on:
       - message-broker
+      - data-store
       - requirements
       - service_a
       - service_b
       - service_c
     environment:
       PYTHONUNBUFFERED: "1"
+      REDIS_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -35,10 +40,12 @@ services:
     image: python:3.8-alpine
     depends_on:
       - message-broker
+      - data-store
       - requirements
       - last
     environment:
       PYTHONUNBUFFERED: "1"
+      REDIS_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -58,10 +65,12 @@ services:
     image: python:3.8-alpine
     depends_on:
       - message-broker
+      - data-store
       - requirements
       - last
     environment:
       PYTHONUNBUFFERED: "1"
+      REDIS_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -81,10 +90,12 @@ services:
     image: python:3.8-alpine
     depends_on:
       - message-broker
+      - data-store
       - requirements
       - last
     environment:
       PYTHONUNBUFFERED: "1"
+      REDIS_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -104,9 +115,11 @@ services:
     image: python:3.8-alpine
     depends_on:
       - message-broker
+      - data-store
       - requirements
     environment:
       PYTHONUNBUFFERED: "1"
+      REDIS_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
