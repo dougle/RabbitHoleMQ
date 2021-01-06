@@ -18,18 +18,23 @@ def main():
 
     def callback(ch, method, properties, body, data={}):
         logging.debug(f"Received message on {queue_name}: {body} \n\n{data}")
+        delay = random.randint(int(os.getenv("RANDOM_WAIT_MIN", 5)), int(os.getenv("RANDOM_WAIT_MAX", 10)))
 
         # add some tribial data to the message body and the data store
         body["history"].append(queue_name)
-        data['updated_at'] = time.time()
-        data[queue_name] = time.time()
+        new_data = {
+            "_id": data["_id"],
+            "updated_at": time.time(),
+            queue_name: time.time(),
+            "delay": data.get("delay", 0) + delay
+        }
 
         # take some time to do a task
-        time.sleep(random.randint(int(os.getenv("RANDOM_WAIT_MIN", 5)), int(os.getenv("RANDOM_WAIT_MAX", 10))))
+        time.sleep(delay)
 
         # push the message on to the next service
         logging.debug(f"Publishing message on {next_queue_name}: {body}")
-        broker.publish(next_queue_name, body, data)
+        broker.publish(next_queue_name, body, new_data)
 
         # True to ack the message
         return True

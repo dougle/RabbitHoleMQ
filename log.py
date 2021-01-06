@@ -20,6 +20,7 @@ def main():
         logging.debug(f"Received message on logger: {body}\n\n{data}")
 
         data['completed_at'] = time.time()
+        data['transfer_duration'] = data['completed_at'] - data['created_at'] - data['delay']
 
         # log the result of each message chain
         logging.info(body)

@@ -1,25 +1,27 @@
 #!/usr/bin/env python
-import os, time, logging, json, uuid
-import pika, redis
+
+import os, time, logging, json
+import pika
 from pika.exceptions import AMQPConnectionError
+from pymongo import MongoClient
+from flatten_dict import flatten
+from bson import ObjectId
 
 logger = logging.getLogger()
-logger.setLevel(os.getenv('LOG_LEVEL', 'INFO'))
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 class Broker:
     def __init__(self, host, port, user, password, connection_attempts=10, connection_attempt_delay=10, data_store=None):
         # the field to track the message chain id in both rabbit and redis
-        self.id_field = "broker_message_id"
+        self.id_field = "_id"
         self.consume_channel = None
         self.publish_channel = None
 
         # start a client for data storage
         if data_store is None:
-            data_store = redis.Redis(
-                host=os.getenv("REDIS_HOST", "localhost"),
-                port=os.getenv("REDIS_PORT", 6379),
-                db=os.getenv("REDIS_DB", 0)
-            )
+            client = MongoClient(os.getenv("MONGODB_HOST", "localhost"))
+            data_store = client.get_database(os.getenv("MONGODB_DB", "broker"))
+            logger.info(data_store)
         self.data_store = data_store
 
         conn_parameters = pika.ConnectionParameters(
@@ -45,7 +47,7 @@ class Broker:
         # consumer callback wrapper
         def fetch_data(ch, method, properties, body_json):
             body = json.loads(body_json)
-            data = json.loads(self.data_store.get(body.get(self.id_field)))
+            data = self.data_store.get_collection(os.getenv("MONGODB_COLLECTION", "messages")).find_one({self.id_field: ObjectId(body[self.id_field])})
 
             # if the callback returns true ack the message
             if callback(ch, method, properties, body, data or {}):
@@ -69,8 +71,16 @@ class Broker:
         if self.publish_channel is None:
             self.publish_channel = self.connection.channel()
 
-        # get or generate a message identifier
-        message[self.id_field] = message.get(self.id_field, str(uuid.uuid4()))
+        if self.id_field in data:
+            # update data
+            self.data_store.get_collection(os.getenv("MONGODB_COLLECTION", "messages")).update_one({self.id_field: ObjectId(data[self.id_field])}, {"$set": flatten(data, reducer="dot")})
+        else:
+            # insert and fetch id
+            result = self.data_store.get_collection(os.getenv("MONGODB_COLLECTION", "messages")).insert_one(data)
+            message[self.id_field] = result.inserted_id
 
-        self.data_store.set(message[self.id_field], json.dumps(data), os.getenv("REDIS_TTL", 600))
+        # convert BSON object id to a string
+        if isinstance(message[self.id_field], ObjectId):
+            message[self.id_field] = str(message[self.id_field])
+
         self.publish_channel.basic_publish(exchange='', routing_key=key, body=json.dumps(message))

@@ -11,7 +11,7 @@ services:
     - "5672:5672"
 
   data-store:
-    image: redis:alpine
+    image: mongo
 
   first:
     image: python:3.8-alpine
@@ -24,7 +24,7 @@ services:
       - service_c
     environment:
       PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "data-store"
+      MONGODB_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -45,7 +45,7 @@ services:
       - last
     environment:
       PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "data-store"
+      MONGODB_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -70,7 +70,7 @@ services:
       - last
     environment:
       PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "data-store"
+      MONGODB_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -95,7 +95,7 @@ services:
       - last
     environment:
       PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "data-store"
+      MONGODB_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"
@@ -119,7 +119,7 @@ services:
       - requirements
     environment:
       PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "data-store"
+      MONGODB_HOST: "data-store"
       RABBITMQ_HOST: "message-broker"
       RABBITMQ_USER: "roger"
       RABBITMQ_PASS: "Jessica"

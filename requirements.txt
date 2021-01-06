@@ -1,2 +1,4 @@
 pika
 redis
+pymongo
+flatten-dict
