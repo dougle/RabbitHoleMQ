@@ -21,7 +21,6 @@ class Broker:
         if data_store is None:
             client = MongoClient(os.getenv("MONGODB_HOST", "localhost"))
             data_store = client.get_database(os.getenv("MONGODB_DB", "broker"))
-            logger.info(data_store)
         self.data_store = data_store
 
         conn_parameters = pika.ConnectionParameters(
